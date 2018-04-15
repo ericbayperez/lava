@@ -1,0 +1,51 @@
+USE_LR_PARSER
+
+prog
+
+(* ======================================================================================================= *)
+
+<prog> ::= <StatementList> .
+
+<StatementList> ::= <Statement> ";" <StatementList> | <Epsilon> .
+
+<Statement> ::= <Declaration> | <Assignment> | <Conditional> | <Increment> | <While> | <For> | <Print> | <Block> . 
+
+<Declaration> ::= "int" Var | "bool" Var .
+
+<Assignment> ::= Var "=" <Expression> .
+
+<Conditional> ::= "if" "(" <Expression> ")" <Block> | "if" "(" <Expression> ")" <Block> "else" <Block> .
+
+<Increment> ::= "++"Var | Var"++" | "--"Var | Var"--" .
+
+<While> ::= "while" "(" <Expression> ")" <Block> .
+
+<ForChange> ::= <Assignment> | <Increment> .
+
+<For> ::= "for" "(" <Assignment> ";" <Expression> ";" <ForChange> ")" <Block> .
+
+<Print> ::= "print" "(" <Expression> ")" . 
+
+<Block> ::= "{" <StatementList> "}" .
+
+<Expression> ::= <Lor> .
+
+<Lor> ::= <Lor> "or" <Land> | <Land> .
+
+<Land> ::= <Land> "and" <Equals> | <Equals> .
+
+<Equals> ::= <Equals> "==" <Compare> | <Equals> "!=" <Compare> | <Compare> .
+
+<Compare> ::= <Compare> "<" <AddSub> | <Compare> ">" <AddSub> | <AddSub> .
+
+<AddSub> ::= <AddSub> "+" <MulDivMo> | <AddSub> "-" <MulDivMo> | <MulDivMo> .
+
+<MulDivMo> ::= <MulDivMo> "*" <Negate> | <MulDivMo> "/" <Negate> | <MulDivMo> "mod" <Negate> | <Negate> .
+
+<Negate> ::= "~"<Negate> | "not" <Negate> | <Exponent> .
+
+<Exponent> ::= <Base> "^" <Exponent> | <Base> .
+
+<Base> ::= Integer | "true" | "false" | Var | "(" <Lor> ")" | "$" <Lor> "$" | <Increment> .
+
+<Epsilon> ::= .
