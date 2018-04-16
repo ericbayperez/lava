@@ -10,6 +10,9 @@ struct
    Consult (i.e., open Int and open Bool) the SML structures Int and Bool for functions that can help with 
    this translation. 
 *)
+
+exception runtime_error;
+
 fun getLeaf( term ) = CONCRETE.leavesToStringRaw term 
 
 
@@ -37,15 +40,77 @@ type store = (loc * denotable_value) list
    incremented. *)
 val initialModel = ( []:env, 0:loc, []:store )
 
+(*Add functions: accessEnv, accessStore, updateEnv, etc*)
+
+fun error msg = (print msg; raise runtime_error);
+
+fun toInt( Integer x ) = x
+    | toInt _ = error "toInt failed";
+
+fun toBool( Boolean false ) = false
+    | toBool (Boolean true) = true
+    | toBool _ = error "toBoolean failed";
+    
+fun printFormat( Integer x ) = Int.toString(x)
+    | printFormat( Boolean x ) = Bool.toString(x);
+    
+fun add (Integer x, Integer y) = x + y
+    | add _ = error "model.add failed";
+
+fun getLoc (t, loc) = loc;
+
+fun getType (t, loc) = t;
+
+fun accessEnv(id1,(env, next, s))=
+    let
+        val msg = "Error: accessEnv " ^ id1 ^ "not found.";
+
+        fun aux [] = error msg
+            | aux ((id,t,loc)::env) =
+                if id1 = id then (t, loc)
+                else aux env;
+    in 
+        aux env
+    end;
+
+fun accessStore( loc, (env, next ,s)) =
+    let
+        val msg = "invalid location : " ^ Int.toString(loc);
+    fun aux [] = error msg
+        | aux ((loc1,dv1)::s) = 
+            if loc1 = loc then dv1 
+            else aux s;
+    in 
+        aux s 
+    end;
+    
+fun updateStore(loc, dv:denotable_value, (env, next, s))=
+    let 
+        fun aux [] = [(loc, dv)]
+            | aux ((loc1, dv1)::s)=
+                if loc1 = loc then (loc,dv)::s
+                else (loc1, dv1)::aux s;
+    in
+        (env, next, aux s)
+    end;
+    
+fun updateEnv(id, t, (env,next, s))=
+    let
+        val msg = "Error: updateEnv " ^ id ^ "already exists. ";
+        fun aux [] = [(id,t,next)]
+            | aux ((id1,t1,loc1)::env) =
+                if id1=id then error msg
+                else (id1,t1,loc1)::aux env;
+    in
+        (aux env, next+1, s)
+    end;
+
+
+
+
 (* =========================================================================================================== *)
 end; (* struct *) 
 (* =========================================================================================================== *)
-
-
-
-
-
-
 
 
 
