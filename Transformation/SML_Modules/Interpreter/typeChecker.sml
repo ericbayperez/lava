@@ -381,8 +381,7 @@ fun typeOf( itree(inode("Expression",_),
             ),
         m0
     ) = typeOf(increment1, m0)
-    
-    
+     
   | typeOf(itree(inode("Assignment",_),
                 [ 
                     var1,
