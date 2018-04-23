@@ -62,6 +62,8 @@ open CONCRETE_REPRESENTATION;
             (2) the root has three children
             (3) the second child is a semi-colon   
 *)
+
+
 fun E( itree(inode("Expression",_),
                 [
                     lor1
@@ -524,19 +526,362 @@ fun E( itree(inode("Expression",_),
         m0
     ) = E(increment1, m0)
 
-            
+  | E(itree(inode("Assignment",_),
+                [ 
+                    var1,
+                    itree(inode("=",_), []),
+                    expression1
+                ]
+            ),
+        m0
+    ) = let
+            val (value1,m1) = E(expression1, m0)
+            val loc = getLoc(accessEnv(getLeaf(var1), m1))
+            val m2 = updateStore(loc, value1, m1)
+        in
+            (value1, m2)
+        end
+        
+  | E(itree(inode("ForChange",_),
+                [
+                    assignment1 as itree(inode("Assignment",_), children)
+                ]
+            ),
+        m0
+    ) = E(assignment1, m0)
+    
+  | E(itree(inode("ForChange",_),
+                [
+                    increment1 as itree(inode("Increment",_), children)
+                ]
+            ),
+        m0
+    ) = E(increment1, m0)
+    
+
+  | E(  itree(inode(x_root,_), children),_) = raise General.Fail("\n\nIn E root = " ^ x_root ^ "\n\n")
+  
+  | E _ = raise Fail("error in Semantics.E - this should never occur")
              
-            
-
-
 fun M(  itree(inode("prog",_), 
                 [ 
-                    stmt_list
+                    statementlist1
                 ] 
              ), 
-        m
-    ) = m
+        m0
+    ) = M(statementlist1, m0)
+    
+ | M(  itree(inode("StatementList",_),
+                [
+                    statement1,
+                    itree(inode(";",_),[]),
+                    statementlist1
+                ]
+            ),
+        m0
+    ) = let
+            val m1 = M(statement1, m0)
+            val m2 = M(statementlist1, m1)
+        in
+            m2
+        end
+    
+  | M(  itree(inode("StatementList",_),
+                [
+                    epsilon1
+                ]
+            ),
+        m0
+    ) = m0
+    
+  | M(  itree(inode("Statement",_),
+                [
+                    declaration1 as itree(inode("Declaration",_), children)
+                ]
+            ),
+        m0
+    ) = M(declaration1, m0)
+    
+  | M(  itree(inode("Statement",_),
+                [
+                    assignment1 as itree(inode("Assignment",_), children)
+                ]
+            ),
+        m0
+    ) = M(assignment1, m0)
+   
+  | M(  itree(inode("Statement",_),
+                [
+                    conditional1 as itree(inode("Conditional",_), children)
+                ]
+            ),
+        m0
+    ) = M(conditional1, m0)
+    
+  | M(  itree(inode("Statement",_),
+                [
+                    increment1 as itree(inode("Increment",_), children)
+                ]
+            ),
+        m0
+    ) = M(increment1, m0)
+  
+  | M(  itree(inode("Statement",_),
+                [
+                    while1 as itree(inode("While",_), children)
+                ]
+            ),
+        m0
+    ) = M(while1, m0)
+    
+  | M(  itree(inode("Statement",_),
+                [
+                    for1 as itree(inode("For",_), children)
+                ]
+            ),
+        m0
+    ) = M(for1, m0)
+    
+  | M(  itree(inode("Statement",_),
+                [
+                    print1 as itree(inode("Print",_), children)
+                ]
+            ),
+        m0
+    ) = M(print1, m0)
         
+    | M(  itree(inode("Statement",_),
+                [
+                    block1 as itree(inode("Block",_), children)
+                ]
+            ),
+        m0
+    ) = M(block1, m0)
+    
+  | M(  itree(inode("Declaration",_),
+                [
+                    itree(inode("int",_),[]),
+                    var1
+                ]
+            ),
+        m0
+    ) = updateEnv(getLeaf(var1), INT, m0)
+    
+  | M(  itree(inode("Declaration",_),
+                [
+                    itree(inode("bool",_),[]),
+                    var1
+                ]
+            ),
+        m0
+    ) = updateEnv(getLeaf(var1), BOOL, m0)
+    
+  | M(  itree(inode("Assignment",_),
+                [
+                    var1,
+                    itree(inode("=",_), []),
+                    expression1
+                ]
+            ),
+        m0
+    ) = let
+            val (value1,m1) = E(expression1, m0)
+            val loc = getLoc(accessEnv(getLeaf(var1), m1))
+            val m2 = updateStore(loc, value1, m1)
+        in
+            m2
+        end
+        
+  | M(  itree(inode("Conditional",_),
+                [
+                    itree(inode("if",_), []),
+                    itree(inode("(",_), []),
+                    expression1,
+                    itree(inode(")",_), []),
+                    block1
+                ]
+            ),
+        m0
+    ) = let
+            val (value1, m1) = E(expression1, m0)
+        in
+            if toBool(value1) then M(block1, m1)
+            else m1
+        end
+   
+  | M(  itree(inode("Conditional",_),
+                [
+                    itree(inode("if",_), []),
+                    itree(inode("(",_), []),
+                    expression1,
+                    itree(inode(")",_), []),
+                    block1,
+                    itree(inode("else",_), []),
+                    block2
+                ]
+            ),
+        m0
+    ) = let
+            val (value1, m1) = E(expression1, m0)
+        in
+            if toBool(value1) then M(block1, m1)
+            else M(block2, m1)
+        end
+        
+  | M(  itree(inode("While",_),
+                [
+                    itree(inode("while",_), []),
+                    itree(inode("(",_), []),
+                    expression1,
+                    itree(inode(")",_), []),
+                    block1
+                ]
+            ),
+        m0
+    ) = let
+            fun aux(n0) = 
+                let 
+                    val (value1, n1) = E(expression1, n0)
+                    val n2 = if toBool(value1) then aux(M(block1, n1))
+                             else n1
+                in
+                    n2
+                end
+        in
+            aux(m0)
+        end
+       
+  
+  | M( itree(inode("Increment",_),
+                [
+                    itree(inode("++",_), [] ),
+                    var1
+                ]
+            ),
+         m0
+    ) = let
+           val location = getLoc(accessEnv(getLeaf(var1),m0))
+           val value1 = accessStore(location, m0)
+           val value2 = add(value1, Integer 1)
+           val m1 = updateStore(location,Integer value2, m0)
+        in
+            m1
+        end
+
+  | M( itree(inode("Increment",_),
+                  [
+                      itree(inode("--",_), [] ),
+                      var1
+                  ]
+               ),
+            m0
+    ) = let
+            val location = getLoc(accessEnv(getLeaf(var1),m0))
+            val value1 = accessStore(location, m0)
+            val value2 = add(value1, Integer ~1)
+            val m1 = updateStore(location, Integer value2, m0)
+        in
+            m1
+        end
+
+  | M( itree(inode("Increment",_),
+                    [
+                        var1,
+                        itree(inode("--",_), [] )
+                    ]
+                ),
+             m0
+    ) = let
+            val location = getLoc(accessEnv(getLeaf(var1), m0))
+            val value1 = accessStore(location, m0)
+            val value2 = add(value1, Integer ~1)
+            val m1 = updateStore(location, Integer value2, m0)
+        in
+            m1
+        end
+
+  | M( itree(inode("Increment",_),
+                [
+                    var1,
+                    itree(inode("++",_), [] )
+                ]
+              ),
+          m0
+    ) = let
+            val location = getLoc(accessEnv(getLeaf(var1), m0))
+            val value1 = accessStore(location, m0)
+            val value2 = add(value1, Integer 1)
+            val m1 = updateStore(location, Integer value2, m0)
+        in
+            m1
+        end
+
+  | M( itree(inode("Block",_),
+              [
+                  itree(inode("{",_), [] ),
+                  statementList1,
+                  itree(inode("}",_), [] )
+              ]
+            ),
+        m0
+      ) =
+      let
+          val(env0,next0,s0) = m0
+          val(env1,next1,s1) = M( statementList1, m0 )
+          val m2 = (env0,next0,s1)
+      in
+          m2
+      end
+
+  | M( itree(inode("Print",_),
+              [
+                  itree(inode("print",_), [] ),
+                  itree(inode("(",_), [] ),
+                  expression1,
+                  itree(inode(")",_), [] )
+              ]
+            ),
+        m0
+     ) =
+     let
+        val(value1, m1) = E(expression1, m0)
+        val str = printFormat(value1)
+        val value2 = print(str ^ "\n")
+    in
+        m1
+    end
+
+  | M( itree(inode("For",_),
+              [
+                  itree(inode("for",_), []),
+                  itree(inode("(",_), []),
+                  assignment1,
+                  itree(inode(";",_), []),
+                  expression1,
+                  itree(inode(";",_), []),
+                  forChange1,
+                  itree(inode(")",_), []),
+                  block1
+              ]
+          ),
+       m0
+    ) = let
+            val m1 = M(assignment1, m0)
+            val (value1, m2) = E(expression1, m1)
+            fun loop(n0)=
+                    let
+                        val n1 = M(block1, n0)
+                        val (value1, n2) = E(forChange1, n1)
+                        val (value2, n3) = E(expression1, n2)
+                    in
+                        if toBool(value2) then loop(n3)
+                        else n3
+                    end
+        in
+            if toBool(value1) then loop(m2)
+            else m2
+        end
+
   | M(  itree(inode(x_root,_), children),_) = raise General.Fail("\n\nIn M root = " ^ x_root ^ "\n\n")
   
   | M _ = raise Fail("error in Semantics.M - this should never occur")
@@ -544,11 +889,4 @@ fun M(  itree(inode("prog",_),
 (* =========================================================================================================== *)
 end (* struct *)
 (* =========================================================================================================== *)
-
-
-
-
-
-
-
 
